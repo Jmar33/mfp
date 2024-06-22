@@ -1,1 +1,3 @@
 node_modules
+packages/marketing/dist/**
+packages/container/dist/**
