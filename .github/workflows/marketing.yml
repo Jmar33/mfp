@@ -1,0 +1,43 @@
+name: deploy-marketing ##Nome do pipe line
+
+## Verifica se aconteceu algum push na branch main
+on:
+  push: 
+    branches: 
+      - main
+    paths:
+      - 'packages/marketing/**' ## Verifica se ocorreram mudanças na pasta marketing
+
+defaults: 
+  run: 
+    working-directory: packages/marketing ## Define o diretório de trabalho como sendo a pasta marketing
+
+## Cria jobs para executar nossas tasks
+## Podemos ter um único job ou vários executando em paralelo 
+## Um exemplo seria um job para buildar a aplicação e outro para fazer o deploy
+
+jobs: 
+  build: 
+    runs-on: ubuntu-latest
+
+    steps: 
+      - uses: actions/checkout@v2
+      - run: npm install 
+      - run: npm run build
+        env: 
+          PRODUCTION_DONMAIN: ${{ secrets.PRODUCTION_DONMAIN }}
+
+      - uses: shinyinc/action-aws-cli@v1.2
+      - run: aws s3 sync dist s3://${{ secrets.AWS_S3_BUCKET_NAME }}/marketing/latest
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-2"
+      - run: aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_DISTRIBUTION_ID }} --paths "/marketing/latest/remoteEntry.js"            
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2
+
+
+
